@@ -1,0 +1,426 @@
+{
+  "openapi": "3.0.2",
+  "info": {
+    "title": "transaccion-autorizacion",
+    "description": "Servicio web de tipo REST, encargado de establecer la comunicación con los servicios de SWA para la transacción de autorización de venta.",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/v1/adq/retail/ventas/autorizar": {
+      "post": {
+        "tags": [
+          "VENTAS"
+        ],
+        "description": "Envío de petición de autorización de venta",
+        "operationId": "venta-autorizar",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "header",
+            "schema": {}
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplicationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Respuesta de aceptación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApplicationResponse"
+                },
+                "examples": {
+                  "2001": {
+                    "value": "{\n  \"transaccion\": {\n    \"claveOperacion\": 19244,\n    \"emv\": {\n     \"emvResponse\": \"8A023030910A18BD1BD9F96806A20010\"\n    },\n    \"comercio\": {\n      \"afiliacion\": \"9165713\"\n    },\n    \"venta\": {\n      \"importe\": 100.00,\n      \"moneda\": \"MXN\",\n      \"fecha\": \"2018-12-26\",\n      \"hora\": \"11:56:58.331-06:00\",     \n      \"producto\": \"CREDITO\",\n      \"bancoEmisor\": \"BANORTE, S.A.\",\n      \"marca\": \"MASTER CARD\",\n      \"autorizacion\": \"801585\",\n      \"claveVenta\": \"937478\",\n      \"leyendaQPS\": \"\"\n    }\n  }\n}\n"
+                  },
+                  "2002": {
+                    "value": "{\n  \"transaccion\": {\n    \"claveOperacion\": 19255,\n    \"emv\": {\n     \"emvResponse\": \"8A023030910A18BD1BD9F96806A60020\"\n    },\n    \"comercio\": {\n      \"afiliacion\": \"8165744\"\n    },\n    \"venta\": {\n      \"importe\": 99.00,\n      \"moneda\": \"MXN\",\n      \"fecha\": \"2018-10-26\",\n      \"hora\": \"11:56:58.331-06:00\",     \n      \"producto\": \"CREDITO\",\n      \"bancoEmisor\": \"BANAMEX, S.A.\",\n      \"marca\": \"MASTER CARD\",\n      \"autorizacion\": \"801590\",\n      \"claveVenta\": \"937482\",\n      \"leyendaQPS\": \"\"\n    }\n  }\n}\n"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "La solicitud contiene sintaxis errónea o valores no permitidos",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "4001": {
+                    "value": "{\n  \"error\": {\n    \"tipo\": \"ERROR\",\n    \"mensaje\": \"Autorización de venta rechazada\"\n  },\n  \"masInformacion\": {\n    \"descripcionRechazo\": \"El mensaje es inválido. Verifique datos de entrada.\"\n  }\n}"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Ocurrió un error que impide que el servicio de respuesta",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InternalErrorResponse"
+                },
+                "examples": {
+                  "5001": {
+                    "value": "{\n  \"error\": {\n    \"tipo\": \"ERROR\",\n    \"mensaje\": \"Autorización de venta rechazada\"\n },\n  \"masInformacion\": {\n    \"claveRechazo\": 71,\n    \"descripcionRechazo\": \"Reintente más tarde.\",\n    \"claveOperacion\": \"987972\",\n    \"claveVenta\": \"937478\"\n  }\n}\n"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ApplicationRequest": {
+        "properties": {
+          "transaccion": {
+            "$ref": "#/components/schemas/TransaccionRequest"
+          }
+        }
+      },
+      "ApplicationResponse": {
+        "properties": {
+          "transaccion": {
+            "$ref": "#/components/schemas/TransaccionResponse"
+          }
+        }
+      },
+      "TransaccionRequest": {
+        "required": [
+          "modoEntrada",
+          "track2"
+        ],
+        "properties": {
+          "modoEntrada": {
+            "description": "Indica la forma en que fueron leídos los datos del track de la tarjeta",
+            "enum": [
+              "00",
+              "01",
+              "02",
+              "05",
+              "80",
+              "90"
+            ],
+            "type": "string",
+            "example": "05"
+          },
+          "track1": {
+            "description": "Este elemento contiene la información codificada en la banda magnética o chip",
+            "type": "string"
+          },
+          "track2": {
+            "description": "Este elemento contiene la información codificada en la banda magnética o chip",
+            "type": "string",
+            "example": "914927c2a88d50aa6b9ea65a3b05dc9eff46780400526403cb0366d6522026908e36041741b2ad347a48b8488b293ebd2f777ba0b1412865d0251df5f23325be1ce2851c0cc7c3dca319bdfe47eb2b8504702281c9d01d4cdf2281dccab6c81eec0b42648eec91497b3a69d9354918ee95daad5509ad8f06afa9e92d11fca420"
+          },
+          "emv": {
+            "$ref": "#/components/schemas/EMVRequest"
+          },
+          "comercio": {
+            "$ref": "#/components/schemas/Comercio"
+          },
+          "venta": {
+            "$ref": "#/components/schemas/VentaRequest"
+          }
+        }
+      },
+      "EMVRequest": {
+        "properties": {
+          "emvRequest": {
+            "description": "Europay MasterCard VISA token request, generado por el comercio",
+            "type": "string",
+            "example": "82025C009F2701809F2608F97BB7BE10220C0B9F360200AF950500800008009F34031E03009F3704F4F8D4209F3303E0B8C000706070A03A0A0009A030907029C01008407A00000000310109F02060000000025009F03060000000000009F1A0204845F2A020484"
+          }
+        }
+      },
+      "EMVResponse": {
+        "properties": {
+          "emvResponse": {
+            "description": "Europay MasterCard VISA token request, generado por base 24",
+            "type": "string",
+            "example": "911606010A03A6A0003F00000000000000008A01007108A1020304A480900072109A112233444455667788"
+          }
+        }
+      },
+      "Comercio": {
+        "required": [
+          "afiliacion"
+        ],
+        "properties": {
+          "afiliacion": {
+            "description": "Contiene el número de comercio asignado por el banco",
+            "type": "string",
+            "example": "900000000"
+          }
+        }
+      },
+      "VentaRequest": {
+        "required": [
+          "importe",
+          "fecha",
+          "hora",
+          "moneda",
+          "claveVenta"
+        ],
+        "properties": {
+          "importe": {
+            "format": "double",
+            "description": "Importe de venta",
+            "type": "number",
+            "example": "755.80"
+          },
+          "moneda": {
+            "description": "Identificador de la moneda",
+            "type": "string",
+            "example": "484"
+          },
+          "fecha": {
+            "format": "date",
+            "description": "Fecha de la transacción en formato ISO yyyy-MM-dd",
+            "type": "string"
+          },
+          "hora": {
+            "description": "Hora de la transacción en formato ISO_LOCAL_TIME",
+            "type": "string",
+            "example": "10:15:30+01:00"
+          },
+          "claveVenta": {
+            "description": "Este elemento contiene el número de referencia del comercio, es utilizado para fines internos y rastreo de tickets",
+            "type": "string",
+            "example": "999999999"
+          },
+          "cvv2": {
+            "description": "Código de seguridad, cuando sea solicitado por el adquirente",
+            "type": "string"
+          },
+          "promocion": {
+            "$ref": "#/components/schemas/Promocion"
+          }
+        }
+      },
+      "Promocion": {
+        "properties": {
+          "diferimiento": {
+            "description": "Número de Meses en el que el pago no será exigible",
+            "type": "string",
+            "example": "00"
+          },
+          "numeroPagos": {
+            "description": "Número de meses en que se va a dividir los pagos",
+            "type": "string",
+            "example": "12"
+          },
+          "tipoPlan": {
+            "description": "Tipo de plan a utilizarse",
+            "enum": [
+              "00",
+              "03",
+              "05",
+              "07"
+            ],
+            "type": "string",
+            "example": "00"
+          }
+        }
+      },
+      "TransaccionResponse": {
+        "required": [
+          "claveOperacion"
+        ],
+        "properties": {
+          "claveOperacion": {
+            "format": "int64",
+            "description": "Este elemento contiene el número de referencia del comercio, es utilizado para fines internos y rastreo de tickets. También conocido como folio de la transacción",
+            "type": "integer",
+            "example": "193839658"
+          },
+          "emv": {
+            "$ref": "#/components/schemas/EMVResponse"
+          },
+          "comercio": {
+            "$ref": "#/components/schemas/Comercio"
+          },
+          "venta": {
+            "$ref": "#/components/schemas/VentaAutorizacionResponse"
+          }
+        }
+      },
+      "VentaAutorizacionResponse": {
+        "required": [
+          "importe",
+          "moneda",
+          "fecha",
+          "hora",
+          "producto",
+          "bancoEmisor",
+          "marca",
+          "autorizacion"
+        ],
+        "properties": {
+          "importe": {
+            "format": "double",
+            "description": "Importe de venta",
+            "type": "number",
+            "example": "755.80"
+          },
+          "moneda": {
+            "description": "Identificador de la moneda",
+            "type": "string",
+            "example": "484"
+          },
+          "fecha": {
+            "format": "date",
+            "description": "Fecha de la transacción en formato ISO yyyy-MM-dd",
+            "type": "string"
+          },
+          "hora": {
+            "description": "Hora de la transacción en formato ISO_LOCAL_TIME",
+            "type": "string",
+            "example": "10:15:30+01:00"
+          },
+          "producto": {
+            "description": "Tipo de tarjeta utilizada, crédito, débito o prepago",
+            "type": "string",
+            "example": "CREDITO"
+          },
+          "bancoEmisor": {
+            "description": "Nombre del banco que emitió la tarjeta",
+            "type": "string",
+            "example": "BBVA Bancomer"
+          },
+          "marca": {
+            "description": "El elemento indica si la tarjeta es VISA, MASTERCARD, CARNET u otra marca",
+            "type": "string",
+            "example": "VISA"
+          },
+          "autorizacion": {
+            "description": "Es el número que identifica la autorización hecha por el emisor para la solicitud de la transacción",
+            "type": "string",
+            "example": "999999"
+          },
+          "claveVenta": {
+            "description": "Este elemento contiene el número de referencia del comercio, es utilizado para fines internos y rastreo de tickets",
+            "type": "string",
+            "example": "999999999"
+          },
+          "leyendaQPS": {
+            "type": "string",
+            "example": "AUTORIZADO SIN FIRMA     "
+          }
+        }
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorBase"
+          },
+          "masInformacion": {
+            "$ref": "#/components/schemas/Rechazo"
+          }
+        }
+      },
+      "InternalErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/InternalErrorBase"
+          },
+          "masInformacion": {
+            "$ref": "#/components/schemas/InternalRechazo"
+          }
+        }
+      },
+      "InternalRechazo": {
+        "properties": {
+          "claveRechazo": {
+            "type": "integer"
+          },
+          "descripcionRechazo": {
+            "type": "string"
+          },
+          "claveOperacion": {
+            "type": "string"
+          },
+          "claveVenta": {
+            "type": "string"
+          }
+        }
+      },
+      "Rechazo": {
+        "properties": {
+          "claveRechazo": {
+            "type": "integer"
+          },
+          "descripcionRechazo": {
+            "description": "Descripción del error",
+            "type": "string",
+            "example": "El mensaje es inválido. Verifique datos de entrada"
+          },
+          "claveOperacion": {
+            "type": "string"
+          },
+          "claveVenta": {
+            "type": "string"
+          }
+        }
+      },
+      "ErrorBase": {
+        "required": [
+          "tipo",
+          "mensaje"
+        ],
+        "properties": {
+          "tipo": {
+            "enum": [
+              "WARNING",
+              "ERROR",
+              "FATAL"
+            ],
+            "type": "string",
+            "example": "ERROR"
+          },
+          "mensaje": {
+            "description": "Descripción del error",
+            "type": "string",
+            "example": "Autorización de venta rechazada"
+          }
+        }
+      },
+      "InternalErrorBase": {
+        "required": [
+          "tipo",
+          "mensaje"
+        ],
+        "properties": {
+          "tipo": {
+            "enum": [
+              "WARNING",
+              "ERROR",
+              "FATAL"
+            ],
+            "type": "string",
+            "example": "FATAL"
+          },
+          "mensaje": {
+            "description": "Descripción del error",
+            "type": "string",
+            "example": "Autorización de venta rechazada"
+          }
+        }
+      }
+    }
+  }
+}

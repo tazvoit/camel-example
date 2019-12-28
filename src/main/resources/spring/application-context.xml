@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <!-- Datasource Postgresql -->
+    <bean class="org.apache.commons.dbcp.BasicDataSource"
+        destroy-method="close" id="database">
+        <property name="driverClassName" value="org.postgresql.Driver"/>
+        <property name="url" value="jdbc:postgresql://postgresql.fuse-integration.svc.cluster.local:5432/coppel"/>
+        <property name="username" value="admin"/>
+        <property name="password" value="admin"/>
+        <property name="testOnBorrow" value="true"/>
+        <property name="testOnReturn" value="true"/>
+        <property name="testWhileIdle" value="true"/>
+        <property name="timeBetweenEvictionRunsMillis" value="1800000"/>
+        <property name="numTestsPerEvictionRun" value="3"/>
+        <property name="minEvictableIdleTimeMillis" value="1800000"/>
+        <property name="validationQuery" value="SELECT 1 "/>
+    </bean>
+    <!-- Bustramite Component -->
+    <bean class="org.apache.camel.component.sql.SqlComponent" id="sql">
+        <property name="dataSource" ref="database"/>
+    </bean>
+    
+    <bean class="org.mycompany.processors.ValidateData" id="validateData" />
+    <bean class="org.mycompany.processors.GenerateResponseError" id="errorHandler" />
+    <bean class="org.mycompany.processors.GenerateObject" id="generateObject" />
+    <bean id="validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean" />
+
+</beans>

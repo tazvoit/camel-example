@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="        http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd        http://camel.apache.org/schema/spring       http://camel.apache.org/schema/spring/camel-spring.xsd">
+    <import resource="application-context.xml"/>
+    <import resource="activemq-context.xml"/>
+    <camelContext id="camel" xmlns="http://camel.apache.org/schema/spring">
+
+        <onException>
+            <exception>java.lang.Exception</exception>
+            <handled>
+                <constant>true</constant>
+            </handled>
+            <log loggingLevel="ERROR" message="[EXCEPTION]:${exchangeProperty[exception]}"/>
+            <process ref="errorHandler" />
+            <setHeader headerName="Exchange.HTTP_RESPONSE_CODE">
+                <simple resultType="Integer">${in.header.CamelHttpResponseCode}</simple>
+            </setHeader>
+        </onException>
+        <!-- REST PUBLICATION -->
+        <restConfiguration apiContextPath="/openapi.json" component="servlet"/>
+        <rest enableCORS="true"
+            id="rest-ba19e089-4eec-41d4-943b-27f146d6990e" path="/demo">
+            <get id="get-a13bc954-903b-4168-bbf2-1befd43bceff"
+                produces="application/json" uri="openapi.json">
+                <description>Gets the openapi document for this service</description>
+                <route>
+                    <setHeader headerName="Exchange.CONTENT_TYPE">
+                        <constant>application/vnd.oai.openapi+json</constant>
+                    </setHeader>
+                    <setBody>
+                        <simple>resource:classpath:openapi.json</simple>
+                    </setBody>
+                </route>
+            </get>
+        </rest>
+        <rest enableCORS="true" id="rest-aabe01e2-0c62-4d67-9498-36a69f712a76">
+            <post id="post-e047252b-2a35-4144-b2fe-faa73de689fe" uri="/demo/consuta">
+                <description>Envío de petición</description>
+                <to uri="direct:validacion"/>
+            </post>
+        </rest>
+        <!-- /REST PUBLICATION -->
+        <!-- PROCESS -->
+        <route id="_route1">
+            <from id="_from1" uri="direct:validacion"/>
+            <process ref="validateData" />
+            <setHeader headerName="nombre">
+                <simple>${body.nombre}</simple>
+            </setHeader>
+            <choice>
+                <when>
+                    <simple>${in.header.validated} == 'pass'</simple>
+                    <to id="_to1" pattern="InOut" uri="activemq:queue:consulta.in"/>
+                    <setHeader headerName="Content-Type">
+                        <simple>application/json</simple>
+                    </setHeader>
+                </when>
+                <otherwise>
+                    <log id="_log1" message="Json Invalid"/>
+                    <setHeader headerName="CamelHttpResponseCode">
+                        <simple resultType="Integer">500</simple>
+                    </setHeader>
+                    <throwException exceptionType="java.lang.Exception" message="Error al leer los datos de entrada"></throwException>
+                </otherwise>
+            </choice>
+        </route>
+        <!-- /PROCESS -->
+        <!-- CLIENT AMQ -->
+        <route id="_route3">
+            <from id="_from4" uri="activemq:queue:consulta.in"/>
+            <to id="_to2" uri="sql:select * from tbl_usuarios where nombre=:#${in.header.nombre}"/>
+            <choice>
+                <when>
+                    <simple>${body.size()} == 0</simple>
+                    <setHeader headerName="CamelHttpResponseCode">
+                        <simple resultType="Integer">202</simple>
+                    </setHeader>
+                    <throwException exceptionType="java.lang.Exception" message="No se encontro el registro"></throwException>
+                </when>
+                <otherwise>
+                    <log message="Datos Encontrados ...${body}" />
+                    <setBody>
+                        <simple>${in.body[0]}</simple>
+                    </setBody>
+                    <process ref="generateObject" />
+                </otherwise>
+            </choice>
+        </route>
+        <!-- /CLIENT AMQ -->
+    </camelContext>
+</beans>
